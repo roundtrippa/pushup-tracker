@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Push-Ups">
+  <meta name="theme-color" content="#1e1b4b">
+  <title>Push-Up Tracker</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlB1c2gtVXAgVHJhY2tlciIsCiAgInNob3J0X25hbWUiOiAiUHVzaC1VcHMiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzFlMWI0YiIsCiAgInRoZW1lX2NvbG9yIjogIiMxZTFiNGIiCn0=">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #1e1b4b 100%);
+      min-height: 100vh;
+      color: white;
+      padding: 20px;
+      padding-top: max(60px, env(safe-area-inset-top) + 20px);
+      padding-bottom: max(20px, env(safe-area-inset-bottom) + 20px);
+    }
+    
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .header h1 {
+      font-size: 32px;
+      font-weight: bold;
+    }
+    
+    .header p {
+      color: #c4b5fd;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    
+    .card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+    }
+    
+    .progress-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .progress-ring {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: 12px solid #a855f7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.3s;
+    }
+    
+    .progress-ring.complete {
+      border-color: #22c55e;
+    }
+    
+    .count-text {
+      font-size: 56px;
+      font-weight: bold;
+    }
+    
+    .count-text.complete {
+      color: #22c55e;
+    }
+    
+    .goal-text {
+      color: #c4b5fd;
+      font-size: 16px;
+    }
+    
+    .progress-bar-container {
+      width: 100%;
+      margin-top: 16px;
+    }
+    
+    .progress-bar-bg {
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-bar-fill {
+      height: 100%;
+      background: #a855f7;
+      border-radius: 4px;
+      transition: width 0.3s, background-color 0.3s;
+    }
+    
+    .progress-bar-fill.complete {
+      background: #22c55e;
+    }
+    
+    .motivation {
+      text-align: center;
+      font-size: 16px;
+      color: #c4b5fd;
+      margin-bottom: 20px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    
+    .motivation.highlight {
+      color: #22c55e;
+      font-size: 18px;
+    }
+    
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .add-btn {
+      background: #7c3aed;
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.2s;
+    }
+    
+    .add-btn:active {
+      transform: scale(0.95);
+      background: #6d28d9;
+    }
+    
+    .secondary-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .custom-btn {
+      flex: 1;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    .reset-btn {
+      background: rgba(239,68,68,0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239,68,68,0.3);
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .stat-box {
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #fb923c;
+    }
+    
+    .stat-value.green { color: #22c55e; }
+    .stat-value.blue { color: #60a5fa; }
+    
+    .stat-label {
+      font-size: 11px;
+      color: #c4b5fd;
+      margin-top: 4px;
+    }
+    
+    .yearly-card {
+      background: rgba(234,179,8,0.15);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(234,179,8,0.3);
+      text-align: center;
+    }
+    
+    .yearly-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fbbf24;
+      margin-bottom: 8px;
+    }
+    
+    .yearly-remaining {
+      font-size: 42px;
+      font-weight: bold;
+    }
+    
+    .yearly-subtext {
+      font-size: 14px;
+      color: #fcd34d;
+      margin-bottom: 12px;
+    }
+    
+    .yearly-progress-bar {
+      width: 100%;
+      height: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    
+    .yearly-progress-fill {
+      height: 100%;
+      background: #fbbf24;
+      border-radius: 5px;
+      transition: width 0.3s;
+    }
+    
+    .yearly-stats {
+      font-size: 12px;
+      color: #fcd34d;
+    }
+    
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    
+    .chart-container {
+      display: flex;
+      justify-content: space-between;
+      height: 120px;
+      align-items: flex-end;
+    }
+    
+    .chart-bar {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .chart-value {
+      font-size: 10px;
+      color: #c4b5fd;
+      margin-bottom: 4px;
+      height: 14px;
+    }
+    
+    .bar-container {
+      flex: 1;
+      width: 80%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    
+    .bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.3s;
+    }
+    
+    .bar.complete { background: #22c55e; }
+    .bar.today { background: #a855f7; }
+    .bar.past { background: #6b21a8; }
+    
+    .chart-day {
+      font-size: 11px;
+      color: #8b5cf6;
+      margin-top: 8px;
+    }
+    
+    .chart-day.today {
+      color: white;
+      font-weight: bold;
+    }
+    
+    .chart-legend {
+      display: flex;
+      align-items: center;
+      margin-top: 12px;
+      gap: 8px;
+    }
+    
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      background: #22c55e;
+      border-radius: 2px;
+    }
+    
+    .legend-text {
+      font-size: 12px;
+      color: #8b5cf6;
+    }
+    
+    .tip-card {
+      background: rgba(147,51,234,0.3);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(147,51,234,0.4);
+    }
+    
+    .tip-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .tip-text {
+      font-size: 14px;
+      color: #e9d5ff;
+      line-height: 1.5;
+    }
+    
+    .history-section {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .history-toggle {
+      color: #8b5cf6;
+      font-size: 14px;
+      text-decoration: underline;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+    
+    .history-list {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 12px;
+      max-height: 250px;
+      overflow-y: auto;
+      text-align: left;
+    }
+    
+    .history-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .history-date {
+      color: #c4b5fd;
+      font-size: 14px;
+    }
+    
+    .history-count {
+      color: #c4b5fd;
+      font-size: 14px;
+    }
+    
+    .history-count.complete {
+      color: #22c55e;
+    }
+    
+    .notification-hint {
+      font-size: 12px;
+      color: #8b5cf6;
+      text-align: center;
+      margin-top: 8px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .backup-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .backup-btn {
+      flex: 1;
+      background: #22c55e;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .backup-btn:active {
+      background: #16a34a;
+    }
+    
+    .restore-btn {
+      flex: 1;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .restore-btn:active {
+      background: #2563eb;
+    }
+    
+    .backup-hint {
+      font-size: 12px;
+      color: #8b5cf6;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Header -->
+    <div class="header">
+      <h1>Push-Up Tracker</h1>
+      <p>100 Daily Challenge</p>
+    </div>
+    
+    <!-- Main Progress Card -->
+    <div class="card">
+      <div class="progress-container">
+        <div class="progress-ring" id="progressRing">
+          <span class="count-text" id="countText">0</span>
+          <span class="goal-text">/ 100</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar"></div>
+          </div>
+        </div>
+      </div>
+      
+      <p class="motivation" id="motivation">Let's get after it! 💪</p>
+      
+      <div class="button-grid">
+        <button class="add-btn" onclick="addPushups(5)">+5</button>
+        <button class="add-btn" onclick="addPushups(10)">+10</button>
+        <button class="add-btn" onclick="addPushups(20)">+20</button>
+        <button class="add-btn" onclick="addPushups(25)">+25</button>
+      </div>
+      
+      <div class="secondary-buttons">
+        <button class="custom-btn" onclick="customAmount()">Custom Amount</button>
+        <button class="reset-btn" onclick="resetToday()">Reset</button>
+      </div>
+    </div>
+    
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-value" id="streakValue">🔥 0</div>
+        <div class="stat-label">Day Streak</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value green" id="totalValue">0</div>
+        <div class="stat-label">Total Ever</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value blue" id="todayPercent">0%</div>
+        <div class="stat-label">Today</div>
+      </div>
+    </div>
+    
+    <!-- Yearly Progress -->
+    <div class="yearly-card">
+      <div class="yearly-title" id="yearlyTitle">🎯 2026 Yearly Goal</div>
+      <div class="yearly-remaining" id="yearlyRemaining">36,500</div>
+      <div class="yearly-subtext">push-ups remaining</div>
+      <div class="yearly-progress-bar">
+        <div class="yearly-progress-fill" id="yearlyProgressFill"></div>
+      </div>
+      <div class="yearly-stats" id="yearlyStats">0 / 36,500 (0.0%)</div>
+    </div>
+    
+    <!-- Weekly Chart -->
+    <div class="card">
+      <div class="card-title">Last 7 Days</div>
+      <div class="chart-container" id="chartContainer"></div>
+      <div class="chart-legend">
+        <div class="legend-dot"></div>
+        <span class="legend-text">= Goal reached (100+)</span>
+      </div>
+    </div>
+    
+    <!-- Reminders Info -->
+    <div class="card">
+      <div class="card-title">⏰ Reminders</div>
+      <p class="notification-hint">
+        Set iPhone alarms for 7am-5pm hourly to remind yourself to do 10 push-ups each hour!
+      </p>
+    </div>
+    
+    <!-- Tips -->
+    <div class="tip-card">
+      <div class="tip-title">💡 Pro Tip</div>
+      <p class="tip-text" id="tipText">Break it into sets! 10 push-ups every hour from 7am-5pm = 110 daily.</p>
+    </div>
+    
+    <!-- History -->
+    <div class="history-section">
+      <button class="history-toggle" onclick="toggleHistory()" id="historyToggle">Show Full History</button>
+      <div class="history-list hidden" id="historyList"></div>
+    </div>
+    
+    <!-- Backup/Restore -->
+    <div class="card">
+      <div class="card-title">💾 Backup & Restore</div>
+      <div class="backup-buttons">
+        <button class="backup-btn" onclick="exportData()">Export Data</button>
+        <button class="restore-btn" onclick="importData()">Import Data</button>
+      </div>
+      <p class="backup-hint">Export your data regularly to keep a backup safe</p>
+    </div>
+    
+  </div>
+
+  <script>
+    // Constants
+    const DAILY_GOAL = 100;
+    const YEARLY_GOAL = 36500;
+    
+    // State
+    let todayCount = 0;
+    let history = {};
+    let showHistory = false;
+    
+    // Get today's date key
+    function getTodayKey() {
+      return new Date().toISOString().split('T')[0];
+    }
+    
+    // Load data from localStorage
+    function loadData() {
+      try {
+        const saved = localStorage.getItem('pushup-data');
+        if (saved) {
+          const data = JSON.parse(saved);
+          history = data.history || {};
+          const todayKey = getTodayKey();
+          if (history[todayKey]) {
+            todayCount = history[todayKey];
+          }
+        }
+      } catch (e) {
+        console.log('Error loading data:', e);
+      }
+      updateUI();
+    }
+    
+    // Save data to localStorage
+    function saveData() {
+      try {
+        const todayKey = getTodayKey();
+        history[todayKey] = todayCount;
+        localStorage.setItem('pushup-data', JSON.stringify({
+          history: history,
+          lastUpdated: new Date().toISOString()
+        }));
+      } catch (e) {
+        console.log('Error saving data:', e);
+      }
+    }
+    
+    // Add push-ups
+    function addPushups(amount) {
+      const wasUnderGoal = todayCount < DAILY_GOAL;
+      todayCount += amount;
+      saveData();
+      updateUI();
+      
+      // Show feedback
+      const motivation = document.getElementById('motivation');
+      motivation.textContent = `+${amount} added!`;
+      motivation.classList.add('highlight');
+      
+      setTimeout(() => {
+        motivation.classList.remove('highlight');
+        updateMotivation();
+      }, 1500);
+      
+      // Vibrate if supported
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+      
+      // Goal reached celebration
+      if (wasUnderGoal && todayCount >= DAILY_GOAL) {
+        if (navigator.vibrate) {
+          navigator.vibrate([100, 50, 100, 50, 100]);
+        }
+        setTimeout(() => {
+          alert('🎉 GOAL REACHED!\n\nYou crushed 100 push-ups today! Amazing work!');
+        }, 100);
+      }
+    }
+    
+    // Custom amount
+    function customAmount() {
+      const amount = prompt('How many push-ups?');
+      if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+        addPushups(parseInt(amount));
+      }
+    }
+    
+    // Reset today
+    function resetToday() {
+      if (confirm('Reset today\'s count to 0?')) {
+        todayCount = 0;
+        saveData();
+        updateUI();
+      }
+    }
+    
+    // Calculate streak
+    function calculateStreak() {
+      let streak = 0;
+      const today = new Date();
+      const todayKey = getTodayKey();
+      const todayComplete = todayCount >= DAILY_GOAL;
+      
+      let checkDate = new Date(today);
+      if (!todayComplete) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+      
+      while (true) {
+        const dateKey = checkDate.toISOString().split('T')[0];
+        const dayCount = history[dateKey] || 0;
+        
+        if (dayCount >= DAILY_GOAL) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      
+      if (todayComplete) streak++;
+      return streak;
+    }
+    
+    // Get total all-time
+    function getTotalPushups() {
+      const todayKey = getTodayKey();
+      let total = 0;
+      Object.entries(history).forEach(([date, count]) => {
+        if (date !== todayKey) {
+          total += count;
+        }
+      });
+      total += todayCount;
+      return total;
+    }
+    
+    // Get yearly progress
+    function getYearlyProgress() {
+      const year = new Date().getFullYear();
+      const todayKey = getTodayKey();
+      
+      let yearlyTotal = 0;
+      Object.entries(history).forEach(([date, count]) => {
+        if (date >= `${year}-01-01` && date !== todayKey) {
+          yearlyTotal += count;
+        }
+      });
+      yearlyTotal += todayCount;
+      
+      return {
+        done: yearlyTotal,
+        remaining: Math.max(0, YEARLY_GOAL - yearlyTotal),
+        percentage: Math.min((yearlyTotal / YEARLY_GOAL) * 100, 100)
+      };
+    }
+    
+    // Get last 7 days
+    function getLast7Days() {
+      const days = [];
+      const today = new Date();
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateKey = date.toISOString().split('T')[0];
+        
+        days.push({
+          day: dayNames[date.getDay()],
+          date: dateKey,
+          count: i === 0 ? todayCount : (history[dateKey] || 0),
+          isToday: i === 0
+        });
+      }
+      return days;
+    }
+    
+    // Update motivation text
+    function updateMotivation() {
+      const remaining = DAILY_GOAL - todayCount;
+      const percentage = (todayCount / DAILY_GOAL) * 100;
+      const motivation = document.getElementById('motivation');
+      
+      if (todayCount === 0) {
+        const starters = [
+          "Let's get after it! 💪",
+          "Every rep counts. Start now!",
+          "Your future self will thank you.",
+          "100 push-ups won't do themselves!"
+        ];
+        motivation.textContent = starters[Math.floor(Math.random() * starters.length)];
+      } else if (percentage < 25) {
+        motivation.textContent = `Great start! ${remaining} more to go.`;
+      } else if (percentage < 50) {
+        motivation.textContent = `Warming up nicely! ${remaining} remaining.`;
+      } else if (percentage < 75) {
+        motivation.textContent = `Over halfway! Only ${remaining} left!`;
+      } else if (percentage < 100) {
+        motivation.textContent = `Almost there! Just ${remaining} more! 🔥`;
+      } else {
+        motivation.textContent = "🎉 GOAL CRUSHED! You're a machine!";
+      }
+    }
+    
+    // Update the entire UI
+    function updateUI() {
+      const progress = Math.min((todayCount / DAILY_GOAL) * 100, 100);
+      const isComplete = progress >= 100;
+      
+      // Update count
+      const countText = document.getElementById('countText');
+      countText.textContent = todayCount;
+      countText.classList.toggle('complete', isComplete);
+      
+      // Update progress ring
+      document.getElementById('progressRing').classList.toggle('complete', isComplete);
+      
+      // Update progress bar
+      const progressBar = document.getElementById('progressBar');
+      progressBar.style.width = `${progress}%`;
+      progressBar.classList.toggle('complete', isComplete);
+      
+      // Update motivation
+      updateMotivation();
+      
+      // Update stats
+      document.getElementById('streakValue').textContent = `🔥 ${calculateStreak()}`;
+      document.getElementById('totalValue').textContent = getTotalPushups().toLocaleString();
+      document.getElementById('todayPercent').textContent = `${Math.round(progress)}%`;
+      
+      // Update yearly progress
+      const yearly = getYearlyProgress();
+      const currentYear = new Date().getFullYear();
+      document.getElementById('yearlyTitle').textContent = `🎯 ${currentYear} Yearly Goal`;
+      document.getElementById('yearlyRemaining').textContent = yearly.remaining.toLocaleString();
+      document.getElementById('yearlyProgressFill').style.width = `${yearly.percentage}%`;
+      document.getElementById('yearlyStats').textContent = 
+        `${yearly.done.toLocaleString()} / ${YEARLY_GOAL.toLocaleString()} (${yearly.percentage.toFixed(1)}%)`;
+      
+      // Update chart
+      updateChart();
+      
+      // Update history list
+      updateHistoryList();
+      
+      // Update tip
+      updateTip();
+    }
+    
+    // Update weekly chart
+    function updateChart() {
+      const days = getLast7Days();
+      const maxCount = Math.max(...days.map(d => d.count), DAILY_GOAL);
+      const container = document.getElementById('chartContainer');
+      
+      container.innerHTML = days.map(day => {
+        const height = Math.max((day.count / maxCount) * 100, 5);
+        const barClass = day.count >= DAILY_GOAL ? 'complete' : (day.isToday ? 'today' : 'past');
+        const dayClass = day.isToday ? 'today' : '';
+        
+        return `
+          <div class="chart-bar">
+            <div class="chart-value">${day.count > 0 ? day.count : ''}</div>
+            <div class="bar-container">
+              <div class="bar ${barClass}" style="height: ${height}%"></div>
+            </div>
+            <div class="chart-day ${dayClass}">${day.day}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Toggle history
+    function toggleHistory() {
+      showHistory = !showHistory;
+      document.getElementById('historyToggle').textContent = showHistory ? 'Hide Full History' : 'Show Full History';
+      document.getElementById('historyList').classList.toggle('hidden', !showHistory);
+    }
+    
+    // Update history list
+    function updateHistoryList() {
+      const todayKey = getTodayKey();
+      const allHistory = { ...history, [todayKey]: todayCount };
+      const sorted = Object.entries(allHistory)
+        .sort((a, b) => b[0].localeCompare(a[0]));
+      
+      const container = document.getElementById('historyList');
+      container.innerHTML = sorted.map(([date, count]) => {
+        const dateObj = new Date(date + 'T00:00:00');
+        const formatted = dateObj.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
+        const completeClass = count >= DAILY_GOAL ? 'complete' : '';
+        const check = count >= DAILY_GOAL ? ' ✓' : '';
+        
+        return `
+          <div class="history-row">
+            <span class="history-date">${formatted}</span>
+            <span class="history-count ${completeClass}">${count}${check}</span>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Update tip
+    function updateTip() {
+      const tips = [
+        "Break it into sets! 10 push-ups every hour from 7am-5pm = 110 daily.",
+        "Do them right when the alarm hits — no excuses!",
+        "Morning push-ups = guaranteed completion. Don't leave it to chance.",
+        "Stack them with habits: 10 push-ups every hour, on the hour.",
+        "Form over speed. Quality reps build real strength."
+      ];
+      document.getElementById('tipText').textContent = tips[new Date().getDay() % tips.length];
+    }
+    
+    // Export data
+    function exportData() {
+      const todayKey = getTodayKey();
+      const allHistory = { ...history, [todayKey]: todayCount };
+      
+      const exportObj = {
+        history: allHistory,
+        exportDate: new Date().toISOString(),
+        totalPushups: getTotalPushups(),
+        currentStreak: calculateStreak()
+      };
+      
+      const dataStr = JSON.stringify(exportObj, null, 2);
+      
+      // Try to use share API on mobile, otherwise copy to clipboard
+      if (navigator.share) {
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const file = new File([blob], 'pushup-backup.json', { type: 'application/json' });
+        
+        navigator.share({
+          title: 'Push-Up Tracker Backup',
+          text: 'My push-up data backup',
+          files: [file]
+        }).catch(() => {
+          // Fallback to clipboard
+          copyToClipboard(dataStr);
+        });
+      } else {
+        copyToClipboard(dataStr);
+      }
+    }
+    
+    // Copy to clipboard helper
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('✅ Data copied to clipboard!\n\nPaste it somewhere safe (Notes app, email to yourself, etc.)');
+      }).catch(() => {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('✅ Data copied to clipboard!\n\nPaste it somewhere safe (Notes app, email to yourself, etc.)');
+      });
+    }
+    
+    // Import data
+    function importData() {
+      const input = prompt('Paste your backup data here:');
+      
+      if (!input) return;
+      
+      try {
+        const data = JSON.parse(input);
+        
+        if (!data.history) {
+          alert('❌ Invalid backup data. Make sure you pasted the complete backup.');
+          return;
+        }
+        
+        // Confirm before overwriting
+        const totalInBackup = Object.values(data.history).reduce((sum, val) => sum + val, 0);
+        const daysInBackup = Object.keys(data.history).length;
+        
+        if (!confirm(`This backup contains:\n• ${daysInBackup} days of data\n• ${totalInBackup.toLocaleString()} total push-ups\n\nReplace your current data with this backup?`)) {
+          return;
+        }
+        
+        // Import the data
+        history = data.history;
+        const todayKey = getTodayKey();
+        todayCount = history[todayKey] || 0;
+        
+        saveData();
+        updateUI();
+        
+        alert('✅ Data restored successfully!');
+        
+      } catch (e) {
+        alert('❌ Could not read backup data. Make sure you pasted the complete JSON backup.');
+      }
+    }
+    
+    // Initialize
+    loadData();
+  </script>
+</body>
+</html>
